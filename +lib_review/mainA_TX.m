@@ -2,25 +2,16 @@ clear all;
 close all;
 clc;
 
-% Script to compare TX implementation of Matlab and C++.
+% In C++:
 %
-% Note: In Matlab, non-standard compliant features were inserted, which might have to be deactivated for a comporison against C++.
+%   1) Disable phase rotation.
+%   2) Set GI percentage to 100.
+%   3) En- or disable cover sequence.
+%   4) Enable JSON export.
 %
-%   1) If symbols with STF show errors, go to file +lib_6_generic_procedures/ofdm_signal_generation_Cyclic_prefix_insertion.m and deactivate this line:
+% In Matlab:
 %
-%       samples_antenna(1:STF_in_samples,:) = sqrt(N_eff_TX)*samples_antenna(1:STF_in_samples,:);
-%
-%   2) If symbols with DRS show errors, go to file +lib_5_physical_layer_transmissions/DRS.m and deactivate the following line:
-%
-%       y_b1 = y_b1*sqrt(N_eff_TX);
-%
-%   3) If symbols with PCC show errors, go to file +lib_6_generic_procedures/Transmit_diversity_precoding_Y.m and actiave this line
-%
-%       dont_use_preafactor_as_in_TS = true;
-%
-%      and deactivate this line:
-%
-%       dont_use_preafactor_as_in_TS = false;
+%   1) En- or disable cover sequence.
 
 warning on
 

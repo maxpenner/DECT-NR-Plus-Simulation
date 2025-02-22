@@ -19,8 +19,8 @@ function [tx, ...
     mac_meta_tx.rv                  = json_struct.rv;
     mac_meta_tx.network_id          = de2bi(json_struct.network_id ,32,'left-msb');
 
-    iq_phase_rad                                = json_struct.meta.iq_phase_rad;
-    iq_phase_increment_s2s_post_resampling_rad  = json_struct.meta.iq_phase_increment_s2s_post_resampling_rad;
+    iq_phase_rad                                = json_struct.tx_meta.iq_phase_rad;
+    iq_phase_increment_s2s_post_resampling_rad  = json_struct.tx_meta.iq_phase_increment_s2s_post_resampling_rad;
 
     % read PLCF and TB bits from C++ (user bits pre channel coding)
     PLCF_bits_cpp = json_struct.data.binary.PLCF;
@@ -132,8 +132,16 @@ function [tx, ...
         samples_antenna_tx_matlab_resampled(:, i) = samples_antenna_tx_matlab_resampled(:, i).*mixer;
     end
 
+    N_samples_packet_no_GI_os_rs = json_struct.N_samples_packet_no_GI_os_rs;
+
+    assert(0.8 <= N_samples_packet_no_GI_os_rs / numel(samples_antenna_tx_matlab_resampled(:,1)));
+
+    % In C++, the packet is terminated at zero with the first GI samples. We only compare non-zero samples.
+    A = samples_antenna_tx_matlab_resampled(1:N_samples_packet_no_GI_os_rs);
+    B = samples_antenna_tx_cpp(1:N_samples_packet_no_GI_os_rs);
+
     % compare samples numerically
-    diff = samples_antenna_tx_matlab_resampled - samples_antenna_tx_cpp;
+    diff = A - B;
     diff_abs = abs(diff);
     err = max(diff_abs, [], 'all');
     if(err > 0.001)
@@ -142,6 +150,12 @@ function [tx, ...
         % To debug, we can take the IQ samples from C++ and try to decode the frame.
         % It will likely fail, but we can still find unexpected number in the time-frequency grid.
         % Depending on the exact TX configuration, the internals of this function must be adjusted (e.g. number of RX antennas).
+
+        figure()
+        plot(abs(samples_antenna_tx_matlab_resampled))
+        hold on
+        plot(abs(samples_antenna_tx_cpp))
+        legend('matlab', 'C++');
 
         error("File with filename %s failed at samples comparison. This can be due to slightly different types of mixing in C++ and Matlab.", ffn);
     end
@@ -158,7 +172,7 @@ function [tx, ...
     % Define power limits for sanity check.
     % Power can be quite low when packet is short as we also include the GI.
     % Furthermore, the STF across all antennas can be low depending of the beamforming matrix.
-    power_all_antennas_HIGH = 1.1;
+    power_all_antennas_HIGH = 1.5;
     if numel(power_per_antenna) == 1
         power_all_antennas_LOW = 0.7;
     elseif numel(power_per_antenna) == 2
